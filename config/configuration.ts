@@ -9,5 +9,7 @@ export default () => ({
     database: process.env.DATABASE_NAME,
     entities: [__dirname + '/../**/*.entity.{ts,js}'],
     synchronize: true,
+    logging: true,         // ← 콘솔에 모든 쿼리 출력
+    logger: 'advanced-console', // 포맷 개선 (기본값)
   }
 });

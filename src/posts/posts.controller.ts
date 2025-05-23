@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { plainToInstance } from 'class-transformer';
+import { PostResponseDto } from './dto/post-response.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -14,17 +16,31 @@ export class PostsController {
 
   @Get()
   findAll() {
-    return this.postsService.findAll();
+    let findAll = this.postsService.findAll();
+    return plainToInstance(PostResponseDto, findAll);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postsService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const post = await this.postsService.findOne(+id);
+
+    return plainToInstance(PostResponseDto, {
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      username: post.author.name,//dto에 없는 건데 나옴..
+    });
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
-    return this.postsService.update(+id, updatePostDto);
+  async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto): Promise<PostResponseDto> {
+    const post = await this.postsService.update(+id, updatePostDto);
+
+    return plainToInstance(PostResponseDto, {
+      id: post.id,
+      title: post.title,
+      content: post.content,
+    });
   }
 
   @Delete(':id')

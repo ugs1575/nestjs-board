@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,35 +7,58 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
+
   constructor(
     @InjectRepository(Post)
     private postRepository: Repository<Post>,
   ) {}
 
   create(createPostDto: CreatePostDto) {
+    //todo : find user
     const { userId, ...rest } = createPostDto;
 
-    const post = this.postRepository.create({
+    return this.postRepository.save({
       ...rest,              // title, content 전개
       author: { id: userId } // 관계 필드는 수동 맵핑
     });
-
-    return this.postRepository.save(post);
   }
 
-  findAll() {
-    return `This action returns all posts`;
+  async findAll() {
+    return await this.postRepository.find({
+      relations: ["author"]
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} post`;
+  async findOne(id: number) {
+    try {
+      return await this.postRepository.findOneOrFail({
+        where: { id },
+        relations: ["author"]
+      });
+    } catch (err) {
+      this.logger.error(err);
+      throw new NotFoundException('게시글이 존재하지 않습니다.');
+    }
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
-    return `This action updates a #${id} post`;
+  async update(id: number, updatePostDto: UpdatePostDto) {
+
+    try {
+      const post = await this.postRepository.findOneOrFail(id);
+    } catch (err) {
+      throw new NotFoundException('게시글이 존재하지 않습니다.');
+    }
+
+    const post = await this.postRepository.findOne(id);
+
+    return await this.postRepository.save({
+        ...post,
+        ...updatePostDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} post`;
+  async remove(id: number) {
+    await this.postRepository.delete(id);
   }
 }
